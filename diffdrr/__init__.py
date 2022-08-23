@@ -12,4 +12,4 @@ from .utils.backend import get_device
 from .utils.camera import Detector
 
 from .visualization.animation import animate
-from .visualization.visualize import plot_volume, plot_camera, plot_drr
+from .visualization.visualize import plot_drr, plot_geometry

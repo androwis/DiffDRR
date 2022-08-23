@@ -86,6 +86,27 @@ def plot_camera(source, rays, ax):
     return ax
 
 
+def plot_geometry(drr, ax=None):
+    """Visualize the geometry of the detector."""
+    if len(list(drr.parameters())) == 0:
+        raise ValueError("Parameters uninitialized.")
+    source, rays = drr.detector.make_xrays(
+        drr.sdr,
+        drr.rotations,
+        drr.translations,
+    )
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(projection="3d")
+    ax = plot_camera(source, rays, ax)
+    ax = plot_volume(
+        np.array(drr.siddon.volume.detach().cpu()),
+        np.array(drr.siddon.spacing.detach().cpu()),
+        *drr.translations.detach().cpu().numpy(),
+        ax=ax,
+    )
+
+
 def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     """
     Plot an DRR output by the projector module.

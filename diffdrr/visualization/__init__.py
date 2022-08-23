@@ -1,2 +1,2 @@
 from .animation import animate
-from .visualize import plot_volume, plot_camera, plot_drr
+from .visualize import plot_drr, plot_geometry

@@ -7,7 +7,6 @@ from .projectors.siddon import Siddon
 from .projectors.siddon_jacobs import SiddonJacobs
 from .utils.backend import get_device
 from .utils.camera import Detector
-from .visualization import plot_camera, plot_volume
 
 
 class DRR(nn.Module):
@@ -113,26 +112,6 @@ class DRR(nn.Module):
         )  # Assume that SDR is given for a 6DoF registration problem
         self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
         self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
-
-    def plot_geometry(self, ax=None):
-        """Visualize the geometry of the detector."""
-        if len(list(self.parameters())) == 0:
-            raise ValueError("Parameters uninitialized.")
-        source, rays = self.detector.make_xrays(
-            self.sdr,
-            self.rotations,
-            self.translations,
-        )
-        if ax is None:
-            fig = plt.figure()
-            ax = fig.add_subplot(projection="3d")
-        ax = plot_camera(source, rays, ax)
-        ax = plot_volume(
-            np.array(self.siddon.volume.detach().cpu()),
-            np.array(self.siddon.spacing.detach().cpu()),
-            *self.translations.detach().cpu().numpy(),
-            ax=ax,
-        )
 
     def __repr__(self):
         params = [str(param) for param in self.parameters()]

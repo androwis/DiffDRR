@@ -83,8 +83,17 @@ def run_convergence_exp(
             theta, phi, gamma = drr.rotations
             bx, by, bz = drr.translations
             writer.writerow(
-                [itr, t1 - t0]
-                + [i.item() for i in [loss, theta, phi, gamma, bx, by, bz]]
+                [
+                    itr,
+                    t1 - t0,
+                    loss.item(),
+                    theta.item(),
+                    phi.item(),
+                    gamma.item(),
+                    bx.item(),
+                    by.item(),
+                    bz.item(),
+                ]
             )
 
             if debug:
@@ -103,27 +112,64 @@ def run_convergence_exp(
 
 @click.command()
 @click.option(
-    "-n", "--n_drrs", type=int, default=100, help="Number of DRRs to try to optimize"
+    "--outdir",
+    default="base",
+    type=click.Path(),
 )
 @click.option(
-    "-i", "--n_itrs", type=int, default=500, help="Number of iterations per DRR"
+    "-n",
+    "--n_drrs",
+    type=int,
+    default=100,
+    help="Number of DRRs to try to optimize",
 )
 @click.option(
-    "-d", "--debug", is_flag=True, default=False, help="Print debug information"
+    "-i",
+    "--n_itrs",
+    type=int,
+    default=500,
+    help="Number of iterations per DRR",
 )
 @click.option(
-    "--lr_rotations", type=float, default=5.3e-2, help="Rotational learning rate"
+    "--lr_rotations",
+    type=float,
+    default=5.3e-2,
+    help="Rotational learning rate",
 )
 @click.option(
-    "--lr_translations", type=float, default=7.5e1, help="Translations learning rate"
+    "--lr_translations",
+    type=float,
+    default=7.5e1,
+    help="Translations learning rate",
 )
-@click.option("--momentum", type=float, default=0.9, help="SGD momentum factor")
 @click.option(
-    "--dampening", type=float, default=0.2, help="SGD dampening factor for momentum"
+    "--momentum",
+    type=float,
+    default=0.9,
+    help="SGD momentum factor",
 )
-@click.option("--outdir", default="base", type=click.Path())
+@click.option(
+    "--dampening",
+    type=float,
+    default=0.2,
+    help="SGD dampening factor for momentum",
+)
+@click.option(
+    "-d",
+    "--debug",
+    is_flag=True,
+    default=False,
+    help="Print debug information",
+)
 def main(
-    n_drrs, n_itrs, debug, lr_rotations, lr_translations, momentum, dampening, outdir
+    outdir,
+    n_drrs,
+    n_itrs,
+    lr_rotations,
+    lr_translations,
+    momentum,
+    dampening,
+    debug,
 ):
 
     # Get the ground truth DRR

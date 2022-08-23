@@ -1,5 +1,3 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import torch
 import torch.nn as nn
 
@@ -20,6 +18,7 @@ class DRR(nn.Module):
         dely=None,
         projector="siddon",
         device="cpu",
+        dtype=torch.float32,
     ):
         """
         Class for generating DRRs.
@@ -42,9 +41,12 @@ class DRR(nn.Module):
             The type of projector, either "siddon" or "siddon_jacobs".
         device : str
             Compute device, either "cpu", "cuda", or "mps".
+        dtype : torch.dtype
+            The data type of the tensors.
         """
         super().__init__()
         self.device = get_device(device)
+        self.dtype = dtype
 
         # Initialize the X-ray detector
         width = height if width is None else width
@@ -81,13 +83,7 @@ class DRR(nn.Module):
         params = [sdr, theta, phi, gamma, bx, by, bz]
         if any(arg is not None for arg in params):
             self.initialize_parameters(*params)
-        source, rays = self.detector.make_xrays(
-            self.sdr,
-            self.rotations,
-            self.translations,
-        )
-        drr = self.siddon.raytrace(source, rays)
-        return drr
+        return self.project(self.sdr, self.rotations, self.translations)
 
     def initialize_parameters(self, sdr, theta, phi, gamma, bx, by, bz):
         """
@@ -103,8 +99,6 @@ class DRR(nn.Module):
             bx    : X-dir translation
             by    : Y-dir translation
             bz    : Z-dir translation
-        return_grads : bool, optional
-            If True, return differentiable vectors for rotations and translations
         """
         tensor_args = {"dtype": self.dtype, "device": self.device}
         self.sdr = nn.Parameter(
@@ -112,6 +106,16 @@ class DRR(nn.Module):
         )  # Assume that SDR is given for a 6DoF registration problem
         self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
         self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
+
+    def project(self, sdr, rotations, translations):
+        """Expose the projection function for use as an intermediate layer."""
+        source, rays = self.detector.make_xrays(
+            sdr,
+            rotations,
+            translations,
+        )
+        drr = self.siddon.raytrace(source, rays)
+        return drr
 
     def __repr__(self):
         params = [str(param) for param in self.parameters()]

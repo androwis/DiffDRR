@@ -106,7 +106,7 @@ class DRR(nn.Module):
         return_grads : bool, optional
             If True, return differentiable vectors for rotations and translations
         """
-        tensor_args = {"dtype": torch.float32, "device": self.device}
+        tensor_args = {"dtype": self.dtype, "device": self.device}
         self.sdr = nn.Parameter(
             torch.tensor(sdr, **tensor_args), requires_grad=False
         )  # Assume that SDR is given for a 6DoF registration problem

@@ -63,12 +63,12 @@ def _get_basis(rho, rotations, device):
     R = rho * Rxyz(rotations, device)
 
     # Get the detector center and X-ray source
-    source = R[:, 0]
+    source = R[:, :, 0]
     center = -source
 
     # Get the basis of the detector plane (before translation)
     # TODO: normalizing the vectors seems to break the gradient, fix in future
-    u, v = R[:, 1], R[:, 2]
+    u, v = R[:, :, 1], R[:, :, 2]
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
@@ -77,59 +77,74 @@ def _get_basis(rho, rotations, device):
 
 # Define 3D rotation matrices
 def Rxyz(rotations, device):
-    theta, phi, gamma = rotations
-    return Rz(theta, device) @ Ry(phi, device) @ Rx(gamma, device)
+    n_batches = len(rotations)
+    theta = rotations[:, 0]
+    phi = rotations[:, 1]
+    gamma = rotations[:, 2]
+    t0 = torch.zeros(n_batches, device=device)
+    t1 = torch.ones(n_batches, device=device)
+    return (
+        Rz(theta, t0, t1, n_batches)
+        @ Ry(phi, t0, t1, n_batches)
+        @ Rx(gamma, t0, t1, n_batches)
+    )
 
 
-def Rx(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
-    return torch.stack(
-        [
-            t1,
-            t0,
-            t0,
-            t0,
-            torch.cos(theta),
-            -torch.sin(theta),
-            t0,
-            torch.sin(theta),
-            torch.cos(theta),
-        ]
-    ).reshape(3, 3)
+def Rx(theta, t0, t1, n_batches):
+    return (
+        torch.stack(
+            [
+                t1,
+                t0,
+                t0,
+                t0,
+                torch.cos(theta),
+                -torch.sin(theta),
+                t0,
+                torch.sin(theta),
+                torch.cos(theta),
+            ]
+        )
+        .reshape(3, 3, n_batches)
+        .permute(2, 0, 1)
+    )
 
 
-def Ry(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
-    return torch.stack(
-        [
-            torch.cos(theta),
-            t0,
-            torch.sin(theta),
-            t0,
-            t1,
-            t0,
-            -torch.sin(theta),
-            t0,
-            torch.cos(theta),
-        ]
-    ).reshape(3, 3)
+def Ry(theta, t0, t1, n_batches):
+    return (
+        torch.stack(
+            [
+                torch.cos(theta),
+                t0,
+                torch.sin(theta),
+                t0,
+                t1,
+                t0,
+                -torch.sin(theta),
+                t0,
+                torch.cos(theta),
+            ]
+        )
+        .reshape(3, 3, n_batches)
+        .permute(2, 0, 1)
+    )
 
 
-def Rz(theta, device):
-    t0 = torch.zeros(1, device=device)[0]
-    t1 = torch.ones(1, device=device)[0]
-    return torch.stack(
-        [
-            torch.cos(theta),
-            -torch.sin(theta),
-            t0,
-            torch.sin(theta),
-            torch.cos(theta),
-            t0,
-            t0,
-            t0,
-            t1,
-        ]
-    ).reshape(3, 3)
+def Rz(theta, t0, t1, n_batches):
+    return (
+        torch.stack(
+            [
+                torch.cos(theta),
+                -torch.sin(theta),
+                t0,
+                torch.sin(theta),
+                torch.cos(theta),
+                t0,
+                t0,
+                t0,
+                t1,
+            ]
+        )
+        .reshape(3, 3, n_batches)
+        .permute(2, 0, 1)
+    )

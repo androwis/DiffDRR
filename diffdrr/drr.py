@@ -104,8 +104,8 @@ class DRR(nn.Module):
         self.sdr = nn.Parameter(
             torch.tensor(sdr, **tensor_args), requires_grad=False
         )  # Assume that SDR is given for a 6DoF registration problem
-        self.rotations = nn.Parameter(torch.tensor([theta, phi, gamma], **tensor_args))
-        self.translations = nn.Parameter(torch.tensor([bx, by, bz], **tensor_args))
+        self.rotations = nn.Parameter(torch.tensor([[theta, phi, gamma]], **tensor_args))
+        self.translations = nn.Parameter(torch.tensor([[bx, by, bz]], **tensor_args))
 
     def project(self, sdr, rotations, translations):
         """Expose the projection function for use as an intermediate layer."""

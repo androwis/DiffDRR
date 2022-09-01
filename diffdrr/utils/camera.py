@@ -41,26 +41,27 @@ class Detector:
         """
 
         # Get the detector plane normal vector
-        source, center, u, v = _get_basis(sdr, rotations, self.device)
+        source, center, u, v, n_batches = _get_basis(sdr, rotations, self.device)
         source += translations
         center += translations
 
         # Construt the detector plane
-        t = (
-            torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1
-        ) * self.delx
-        s = (
-            torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1
-        ) * self.dely
-        coefs = torch.cartesian_prod(t, s).reshape(self.height, self.width, 2)
-        rays = coefs @ torch.stack([u, v])
+        t = torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1
+        s = torch.arange(-self.width // 2, self.width // 2, device=self.device) + 1
+        t = t * self.delx
+        s = s * self.dely
+        coefs = torch.cartesian_prod(t, s).reshape(1, self.height, self.width, 2)
+        coefs = coefs.expand(n_batches, -1, -1, -1)
+        basis = torch.stack([u, v], dim=1).unsqueeze(1)
+        rays = coefs @ basis
         rays += center
         return source, rays
 
 
 def _get_basis(rho, rotations, device):
     # Get the rotation of 3D space
-    R = rho * Rxyz(rotations, device)
+    n_batches = len(rotations)
+    R = rho * Rxyz(rotations, n_batches, device)
 
     # Get the detector center and X-ray source
     source = R[:, :, 0]
@@ -72,12 +73,11 @@ def _get_basis(rho, rotations, device):
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
-    return source, center, u, v
+    return source, center, u, v, n_batches
 
 
 # Define 3D rotation matrices
-def Rxyz(rotations, device):
-    n_batches = len(rotations)
+def Rxyz(rotations, n_batches, device):
     theta = rotations[:, 0]
     phi = rotations[:, 1]
     gamma = rotations[:, 2]

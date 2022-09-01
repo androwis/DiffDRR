@@ -44,6 +44,7 @@ class Detector:
         source, center, u, v, n_batches = _get_basis(sdr, rotations, self.device)
         source += translations
         center += translations
+        center = center.unsqueeze(1).unsqueeze(1)
 
         # Construt the detector plane
         t = torch.arange(-self.height // 2, self.height // 2, device=self.device) + 1

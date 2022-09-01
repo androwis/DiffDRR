@@ -1,5 +1,7 @@
 import torch
 
+from ..utils.utils import delete_tensor
+
 
 class Siddon:
     """A vectorized version of the Siddon ray tracing algorithm."""
@@ -16,16 +18,16 @@ class Siddon:
         self.dims += 1.0
 
     def get_alpha_minmax(self, source, target):
-        ssd = target - source + self.eps
+        sdd = target - source + self.eps
         planes = torch.zeros(3, device=self.device)
-        alpha0 = (planes * self.spacing - source) / ssd
+        alpha0 = (planes * self.spacing - source) / sdd
         planes = self.dims - 1
-        alpha1 = (planes * self.spacing - source) / ssd
+        alpha1 = (planes * self.spacing - source) / sdd
         alphas = torch.stack([alpha0, alpha1])
 
         alphamin = alphas.min(dim=0).values.max(dim=-1).values
         alphamax = alphas.max(dim=0).values.min(dim=-1).values
-        return alphamin, alphamax
+        return alphamin.unsqueeze(1), alphamax.unsqueeze(1)
 
     def get_alphas(self, source, target):
         # Get the CT sizing and spacing parameters

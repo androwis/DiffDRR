@@ -41,9 +41,10 @@ class Detector:
         """
 
         # Get the detector plane normal vector
-        source, center, u, v, n_batches = _get_basis(sdr, rotations, self.device)
+        source, center, u, v, batch_size = _get_basis(sdr, rotations, self.device)
         source += translations
         center += translations
+        source = source.unsqueeze(1).unsqueeze(1)
         center = center.unsqueeze(1).unsqueeze(1)
 
         # Construt the detector plane
@@ -52,7 +53,7 @@ class Detector:
         t = t * self.delx
         s = s * self.dely
         coefs = torch.cartesian_prod(t, s).reshape(1, self.height, self.width, 2)
-        coefs = coefs.expand(n_batches, -1, -1, -1)
+        coefs = coefs.expand(batch_size, -1, -1, -1)
         basis = torch.stack([u, v], dim=1).unsqueeze(1)
         rays = coefs @ basis
         rays += center
@@ -61,8 +62,8 @@ class Detector:
 
 def _get_basis(rho, rotations, device):
     # Get the rotation of 3D space
-    n_batches = len(rotations)
-    R = rho * Rxyz(rotations, n_batches, device)
+    batch_size = len(rotations)
+    R = rho * Rxyz(rotations, batch_size, device)
 
     # Get the detector center and X-ray source
     source = R[:, :, 0]
@@ -74,24 +75,24 @@ def _get_basis(rho, rotations, device):
     # u_ = u / torch.norm(u)
     # v_ = v / torch.norm(v)
 
-    return source, center, u, v, n_batches
+    return source, center, u, v, batch_size
 
 
 # Define 3D rotation matrices
-def Rxyz(rotations, n_batches, device):
+def Rxyz(rotations, batch_size, device):
     theta = rotations[:, 0]
     phi = rotations[:, 1]
     gamma = rotations[:, 2]
-    t0 = torch.zeros(n_batches, device=device)
-    t1 = torch.ones(n_batches, device=device)
+    t0 = torch.zeros(batch_size, device=device)
+    t1 = torch.ones(batch_size, device=device)
     return (
-        Rz(theta, t0, t1, n_batches)
-        @ Ry(phi, t0, t1, n_batches)
-        @ Rx(gamma, t0, t1, n_batches)
+        Rz(theta, t0, t1, batch_size)
+        @ Ry(phi, t0, t1, batch_size)
+        @ Rx(gamma, t0, t1, batch_size)
     )
 
 
-def Rx(theta, t0, t1, n_batches):
+def Rx(theta, t0, t1, batch_size):
     return (
         torch.stack(
             [
@@ -106,12 +107,12 @@ def Rx(theta, t0, t1, n_batches):
                 torch.cos(theta),
             ]
         )
-        .reshape(3, 3, n_batches)
+        .reshape(3, 3, batch_size)
         .permute(2, 0, 1)
     )
 
 
-def Ry(theta, t0, t1, n_batches):
+def Ry(theta, t0, t1, batch_size):
     return (
         torch.stack(
             [
@@ -126,12 +127,12 @@ def Ry(theta, t0, t1, n_batches):
                 torch.cos(theta),
             ]
         )
-        .reshape(3, 3, n_batches)
+        .reshape(3, 3, batch_size)
         .permute(2, 0, 1)
     )
 
 
-def Rz(theta, t0, t1, n_batches):
+def Rz(theta, t0, t1, batch_size):
     return (
         torch.stack(
             [
@@ -146,6 +147,6 @@ def Rz(theta, t0, t1, n_batches):
                 t1,
             ]
         )
-        .reshape(3, 3, n_batches)
+        .reshape(3, 3, batch_size)
         .permute(2, 0, 1)
     )

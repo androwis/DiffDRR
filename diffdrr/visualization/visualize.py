@@ -115,7 +115,7 @@ def plot_drr(drr, title=None, ticks=True, animated=False, ax=None):
     img = ax.imshow(drr, cmap="gray", animated=animated)
     ax.xaxis.tick_top()
     ax.set(
-        title=title,
+        xlabel=title,
         xticks=[0, nx - 1],
         xticklabels=[1, nx],
         yticks=[0, ny - 1],
